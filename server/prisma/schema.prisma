@@ -1,0 +1,291 @@
+// Prisma Schema for GT-Coding User System and Credit Membership
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER MODELS
+// ==========================================
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  status       UserStatus @default(active)
+  registeredAt DateTime   @default(now())
+  lastLoginAt  DateTime?
+
+  // Relations
+  creditBalance      CreditBalance?
+  checkIns           CheckIn[]
+  creditTransactions CreditTransaction[]
+  rechargeOrders     RechargeOrder[]
+  codingTasks        CodingTask[]
+  sessions           Session[]
+
+  @@index([email])
+  @@map("users")
+}
+
+enum UserStatus {
+  active
+  disabled
+}
+
+model AdminUser {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  lastLoginAt  DateTime?
+
+  // Relations
+  sessions           AdminSession[]
+  actionLogs         AdminActionLog[]
+  processedOrders    RechargeOrder[]
+  creditAdjustments  CreditTransaction[]
+
+  @@map("admin_users")
+}
+
+// ==========================================
+// SESSION MODELS
+// ==========================================
+
+model Session {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash      String   @unique
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+  lastAccessedAt DateTime @default(now())
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@map("sessions")
+}
+
+model AdminSession {
+  id             String     @id @default(cuid())
+  adminId        String
+  admin          AdminUser  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  tokenHash      String     @unique
+  createdAt      DateTime   @default(now())
+  expiresAt      DateTime
+  lastAccessedAt DateTime   @default(now())
+
+  @@index([tokenHash])
+  @@map("admin_sessions")
+}
+
+// ==========================================
+// CREDIT MODELS
+// ==========================================
+
+model CreditBalance {
+  id      String @id @default(cuid())
+  userId  String @unique
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance Int    @default(0) // in credits
+
+  @@map("credit_balances")
+}
+
+model CreditTransaction {
+  id                String          @id @default(cuid())
+  transactionNumber String          @unique
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // For admin adjustments, track which admin made the change
+  adminId  String?
+  admin    AdminUser?    @relation(fields: [adminId], references: [id])
+
+  type        TransactionType
+  amount      Int    // positive for income, negative for expense
+  balanceAfter Int   // balance after this transaction
+  description String
+  relatedId   String? // ID of related entity (orderId, codingTaskId, etc.)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([type])
+  @@map("credit_transactions")
+}
+
+enum TransactionType {
+  registration_bonus // 注册赠送
+  check_in // 签到奖励
+  check_in_bonus // 连续签到奖励
+  recharge // 充值
+  coding_consumption // 编码消耗
+  admin_adjustment // 管理员调整
+}
+
+// ==========================================
+// CHECK-IN MODELS
+// ==========================================
+
+model CheckIn {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkedInAt    DateTime @default(now())
+  creditsAwarded Int
+  bonusAwarded   Int      @default(0)
+  consecutiveDays Int     @default(1)
+
+  // Store the date in China timezone for querying
+  checkInDate String // Format: YYYY-MM-DD in UTC+8
+
+  @@unique([userId, checkInDate])
+  @@index([userId, checkedInAt(sort: Desc)])
+  @@map("check_ins")
+}
+
+// ==========================================
+// RECHARGE MODELS
+// ==========================================
+
+model RechargePlan {
+  id         String  @id
+  name       String
+  price      Int // in CNY (yuan)
+  credits    Int
+  characters Int
+  qrCodeUrl  String
+  isActive   Boolean @default(true)
+  createdAt  DateTime @default(now())
+
+  @@map("recharge_plans")
+}
+
+model RechargeOrder {
+  id               String      @id @default(cuid())
+  orderNumber      String      @unique
+  userId           String
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  planId           String
+  credits          Int // credits to be awarded
+
+  paymentTime      DateTime
+  transactionLast4 String // last 4 digits of transaction ID
+
+  status OrderStatus @default(pending)
+
+  // Admin processing
+  processedById    String?
+  processedBy      AdminUser?  @relation(fields: [processedById], references: [id])
+  processedAt      DateTime?
+  rejectionReason  String?
+
+  submittedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([submittedAt(sort: Desc)])
+  @@map("recharge_orders")
+}
+
+enum OrderStatus {
+  pending
+  approved
+  rejected
+}
+
+// ==========================================
+// CODING TASK MODEL
+// ==========================================
+
+model CodingTask {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  inputTextLength Int // character count
+  creditsConsumed Int
+  theory          String
+  depth           String
+
+  // Store reference to result (actual result stored separately or in blob storage)
+  resultStored Boolean @default(false)
+
+  completedAt DateTime @default(now())
+
+  @@index([userId, completedAt(sort: Desc)])
+  @@map("coding_tasks")
+}
+
+// ==========================================
+// VERIFICATION CODE MODEL
+// ==========================================
+
+model VerificationCode {
+  id        String              @id @default(cuid())
+  email     String
+  code      String // 6-digit code
+  purpose   VerificationPurpose
+  createdAt DateTime            @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  @@index([email, purpose])
+  @@map("verification_codes")
+}
+
+enum VerificationPurpose {
+  registration
+  password_reset
+}
+
+// ==========================================
+// ADMIN ACTION LOG
+// ==========================================
+
+model AdminActionLog {
+  id         String    @id @default(cuid())
+  adminId    String
+  admin      AdminUser @relation(fields: [adminId], references: [id])
+  action     String
+  targetType String // 'order', 'user', 'credit'
+  targetId   String
+  details    Json? // Additional details
+  createdAt  DateTime  @default(now())
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@map("admin_action_logs")
+}
+
+// ==========================================
+// NOTIFICATION MODEL
+// ==========================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  content   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  check_in_success
+  check_in_milestone
+  recharge_approved
+  recharge_rejected
+  low_balance_warning
+}
