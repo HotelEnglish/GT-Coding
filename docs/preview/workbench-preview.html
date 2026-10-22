@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>设计预览 — 研究工作台（Phase 4）</title>
+<style>
+  :root {
+    --indigo-50:#eef2ff; --indigo-100:#e0e7ff; --indigo-500:#6366f1; --indigo-600:#4f46e5; --indigo-700:#4338ca; --indigo-800:#3730a3;
+    --violet-50:#f5f3ff; --violet-200:#ddd6fe; --violet-700:#7e22ce;
+    --teal-50:#f0fdfa; --teal-200:#99f6e4; --teal-700:#0f766e;
+    --red-50:#fef2f2; --red-200:#fecaca; --red-700:#b91c1c;
+    --amber-50:#fffbeb; --amber-200:#fde68a; --amber-700:#b45309;
+    --emerald-50:#ecfdf5; --emerald-200:#a7f3d0; --emerald-700:#047857;
+    --g-50:#f9fafb; --g-100:#f3f4f6; --g-200:#e5e7eb; --g-300:#d1d5db; --g-400:#9ca3af; --g-500:#6b7280; --g-600:#4b5563; --g-700:#374151; --g-800:#1f2937; --g-900:#111827;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background:var(--g-50); color:var(--g-900); min-height:100vh; display:flex; }
+  .ribbon { position:fixed; top:0; right:0; z-index:50; background:var(--g-800); color:#fff; font-size:11px; padding:4px 12px; border-radius:0 0 0 8px; opacity:.9; }
+  /* ── Sidebar ── */
+  .sidebar { width:200px; flex-shrink:0; background:var(--g-900); color:#fff; min-height:100vh; padding:14px 10px; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .brand { display:flex; align-items:center; gap:8px; padding:6px 8px 16px; }
+  .brand .logo { width:26px; height:26px; border-radius:8px; background:linear-gradient(135deg,var(--indigo-500),#8b5cf6); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
+  .brand .name { font-size:13px; font-weight:700; letter-spacing:.5px; }
+  .sec { font-size:10px; color:var(--g-400); padding:12px 8px 4px; letter-spacing:1px; }
+  .nav { display:flex; align-items:center; justify-content:space-between; font-size:12.5px; padding:7px 9px; border-radius:8px; color:#d1d5db; cursor:pointer; margin-bottom:2px; }
+  .nav:hover { background:var(--g-800); }
+  .nav.active { background:var(--indigo-600); color:#fff; font-weight:600; }
+  .tag { font-size:9px; padding:1px 5px; border-radius:5px; }
+  .tag.legacy { background:var(--red-700); color:#fff; }
+  .tag.frozen { background:var(--g-700); color:var(--g-300); }
+  .tag.new { background:#22d3ee; color:#0e3a42; }
+  /* ── Main ── */
+  .main { flex:1; min-width:0; padding:20px 22px; }
+  .topbar { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+  .topbar h1 { font-size:16px; font-weight:700; }
+  .topbar p { font-size:11px; color:var(--g-500); margin-top:2px; }
+  .card { background:#fff; border:1px solid var(--g-200); border-radius:12px; }
+  .muted { color:var(--g-500); font-size:11px; }
+  .mini { font-size:10px; }
+  code.inline { background:var(--g-100); border:1px solid var(--g-200); border-radius:4px; padding:0 4px; font-size:10px; font-family:Consolas,monospace; }
+  /* Project header */
+  .proj { padding:16px 18px; margin-bottom:12px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; }
+  .badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:6px; border:1px solid; }
+  .badge.profile { color:var(--indigo-700); background:var(--indigo-50); border-color:var(--indigo-100); }
+  .btn { font-size:11.5px; font-weight:600; padding:7px 14px; border-radius:8px; border:1px solid transparent; cursor:pointer; transition:all .15s; }
+  .btn.primary { background:var(--indigo-600); color:#fff; }
+  .btn.primary:hover { background:var(--indigo-700); }
+  .btn.ghost { background:#fff; color:var(--g-600); border-color:var(--g-300); }
+  .btn.ghost:hover { border-color:var(--indigo-500); color:var(--indigo-600); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  /* Run bar */
+  .runbar { padding:12px 18px; margin-bottom:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  select { font-size:11.5px; padding:6px 8px; border:1px solid var(--g-300); border-radius:7px; background:#fff; color:var(--g-700); }
+  .steps { display:flex; align-items:center; gap:0; flex:1; min-width:340px; }
+  .step { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--g-400); white-space:nowrap; }
+  .step .dot { width:14px; height:14px; border-radius:50%; border:2px solid var(--g-300); background:#fff; }
+  .step .dot.done { background:var(--emerald-200); border-color:var(--emerald-200); content:"" }
+  .step .dot.now { border-color:var(--indigo-500); box-shadow:0 0 0 3px var(--indigo-100); animation:pulse 1.2s infinite; }
+  .step.active { color:var(--indigo-700); font-weight:600; }
+  .arrow { color:var(--g-300); font-size:10px; margin:0 6px; }
+  @keyframes pulse { 50% { opacity:.55 } }
+  .runmsg { font-size:10px; color:var(--g-500); }
+  /* Three columns */
+  .grid3 { display:grid; grid-template-columns: 340px 1fr 300px; gap:12px; align-items:start; }
+  .colhead { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--g-100); font-size:12px; font-weight:700; }
+  .version-tag { font-size:10px; background:var(--g-100); color:var(--g-600); padding:2px 7px; border-radius:6px; font-family:Consolas,monospace; }
+  .lock { font-size:10px; color:var(--g-400); display:flex; align-items:center; gap:4px; }
+  /* source text */
+  .source { padding:14px; font-size:12px; line-height:2.1; color:var(--g-700); }
+  .hl { background:#fef9c3; border-bottom:2px solid #eab308; padding:1px 0; cursor:pointer; border-radius:2px; }
+  .hl:hover { background:#fde68a; }
+  .hl.legend-ai { position:relative; }
+  .legend { display:flex; gap:10px; align-items:center; font-size:10px; color:var(--g-500); border-top:1px solid var(--g-100); padding:8px 14px; }
+  .legend .sw { width:20px; height:8px; background:#fde68a; border-bottom:2px solid #eab308; border-radius:2px; }
+  /* code cards */
+  .codes { padding:12px; display:flex; flex-direction:column; gap:10px; }
+  .codecard { border:1px solid var(--g-200); border-radius:10px; padding:12px; transition:box-shadow .15s; }
+  .codecard:hover { box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .codecard.accepted { border-color:var(--emerald-200); background:var(--emerald-50); }
+  .codecard.rejected { border-color:var(--g-200); background:var(--g-50); opacity:.75; }
+  .codecard.rejected .codelabel { text-decoration:line-through; }
+  .codecard.edited { border-color:var(--violet-200); background:var(--violet-50); }
+  .codecard .row1 { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
+  .codelabel { font-size:12.5px; font-weight:700; }
+  .badge.ai { color:var(--indigo-700); background:var(--indigo-50); border-color:var(--indigo-100); }
+  .badge.researcher { color:var(--emerald-700); background:var(--emerald-50); border-color:var(--emerald-200); }
+  .badge.editedb { color:var(--violet-700); background:var(--violet-50); border-color:var(--violet-200); }
+  .badge.rej { color:var(--g-500); background:var(--g-100); border-color:var(--g-200); }
+  .quote { font-size:10.5px; background:var(--g-50); border-left:3px solid #eab308; padding:6px 8px; border-radius:0 6px 6px 0; color:var(--g-700); margin:6px 0; font-style:italic; }
+  .provenance { display:flex; gap:8px; flex-wrap:wrap; font-size:9.5px; color:var(--g-400); font-family:Consolas,monospace; }
+  .provenance .ok { color:var(--emerald-700); }
+  .rationale { font-size:10.5px; color:var(--g-600); line-height:1.6; margin-top:4px; }
+  .actions { display:flex; gap:6px; margin-top:8px; }
+  .act { font-size:10.5px; padding:4px 10px; border-radius:6px; border:1px solid var(--g-300); background:#fff; color:var(--g-600); cursor:pointer; }
+  .act:hover { border-color:var(--indigo-500); color:var(--indigo-600); }
+  .act.accept:hover { border-color:var(--emerald-700); color:var(--emerald-700); }
+  .act.reject:hover { border-color:var(--red-700); color:var(--red-700); }
+  .details-btn { font-size:9.5px; color:var(--indigo-600); background:none; border:none; cursor:pointer; padding:0; margin-top:4px; }
+  details.orig { margin-top:6px; }
+  details.orig summary { font-size:9.5px; color:var(--g-500); cursor:pointer; }
+  details.orig .origtext { font-size:10px; color:var(--g-600); background:var(--g-50); border-radius:6px; padding:6px 8px; margin-top:4px; }
+  /* memo column */
+  .memo-col { display:flex; flex-direction:column; gap:12px; }
+  .memos { padding:12px; display:flex; flex-direction:column; gap:8px; }
+  .memo { border:1px solid var(--g-200); border-radius:9px; padding:9px 10px; font-size:10.5px; line-height:1.65; }
+  .memo .mrow { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .memo .who { font-size:9px; padding:1px 6px; border-radius:5px; font-weight:600; }
+  .who.ai { background:var(--indigo-50); color:var(--indigo-700); }
+  .who.human { background:var(--g-100); color:var(--g-600); }
+  .who.ai-confirmed { background:var(--emerald-50); color:var(--emerald-700); }
+  .satnote { display:flex; align-items:flex-start; gap:6px; background:var(--g-50); border:1px dashed var(--g-300); border-radius:9px; padding:8px 10px; font-size:10px; color:var(--g-500); }
+  .field { display:flex; flex-direction:column; gap:3px; }
+  .field label { font-size:10px; color:var(--g-600); font-weight:600; }
+  .field textarea, .field select { font-size:11px; border:1px solid var(--g-300); border-radius:7px; padding:6px 8px; resize:vertical; font-family:inherit; color:var(--g-700); }
+  .footer-note { margin-top:14px; display:flex; gap:14px; flex-wrap:wrap; }
+  .copyright { text-align:center; font-size:10px; color:var(--g-400); padding:14px 0 4px; letter-spacing:.3px; }
+  .invariant { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--g-500); background:#fff; border:1px solid var(--g-200); border-radius:8px; padding:6px 10px; }
+  .invariant .ic { color:var(--emerald-700); font-weight:800; }
+</style>
+</head>
+<body>
+<div class="ribbon">静态设计预览 · docs/preview/workbench-preview.html · 交互仅为演示</div>
+
+<!-- ══ 侧边栏 ══ -->
+<aside class="sidebar">
+  <div class="brand"><div class="logo">GT</div><div class="name">GT-Coding</div></div>
+  <div class="sec">核心工作流</div>
+  <div class="nav">📚 编码工作台 <span class="tag legacy">旧版快照</span></div>
+  <div class="nav active">🔬 研究工作台 <span class="tag new">NEW</span></div>
+  <div class="nav">📖 参考文献库</div>
+  <div class="nav">🏷️ 专业术语设置</div>
+  <div class="sec">理论参考</div>
+  <div class="nav">📕 方法论说明</div>
+  <div class="sec">账户</div>
+  <div class="nav">⚙️ API 配置</div>
+  <div class="nav">👤 用户中心 <span class="tag frozen">冻结</span></div>
+  <div class="nav">🛠 管理后台 <span class="tag frozen">冻结</span></div>
+</aside>
+
+<!-- ══ 主区 ══ -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1>研究工作台 <span class="badge profile">程序化扎根 · Strauss-Corbin</span></h1>
+      <p>工作区：<code class="inline">local-default</code>（功能 MVP 阶段）· 研究问题：外卖骑手劳动过程中的制度体验如何建构？</p>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn ghost">⬇ 导出审计档案 JSON</button>
+      <button class="btn ghost">⬇ 导出审计档案 CSV</button>
+    </div>
+  </div>
+
+  <!-- 运行条 -->
+  <div class="card runbar">
+    <div class="field" style="min-width:190px">
+      <label>分析对象（不可变版本）</label>
+      <select><option selected>访谈三 v1 · hash a3f9…8c2d</option><option>访谈一 v1 · hash 7b1e…d40a</option></select>
+    </div>
+    <div class="steps">
+      <div class="step done"><div class="dot" style="background:var(--indigo-600); border-color:var(--indigo-600)"></div>已排队</div><span class="arrow">›</span>
+      <div class="step active"><div class="dot now"></div>模型生成建议</div><span class="arrow">›</span>
+      <div class="step"><div class="dot"></div>校验证据引语</div><span class="arrow">›</span>
+      <div class="step"><div class="dot"></div>落库建议</div><span class="arrow">›</span>
+      <div class="step"><div class="dot"></div>完成</div>
+    </div>
+    <div>
+      <div style="text-align:right"><button class="btn primary" onclick="toggleRun()">▶ 运行分析</button></div>
+      <div class="runmsg">Idempotency-Key: <code class="inline">b8f2-…-auto</code></div>
+    </div>
+  </div>
+
+  <!-- 三栏评审 -->
+  <div class="grid3">
+
+    <!-- 左：不可变原文 -->
+    <section class="card">
+      <div class="colhead">
+        <div class="lock">🔒 <b>资料原文</b> · 只读</div>
+        <span class="version-tag">访谈三 · v1</span>
+      </div>
+      <div class="source">
+        <p style="margin-bottom:8px; font-size:11px; color:var(--g-500)">受访者 R07 · 外卖骑手 · 第 42 分钟起</p>
+        平台算法派单一接单，我们看到的是那条蓝色的轨迹线，<span class="hl">他从中抽自己骑手将近三成，讲话的环境强度很高，每一单都是倒计时</span>，倒计时跳红的时候心跳也跟着跳。有一次撞上大雨，超时补偿名单根本没人告知。
+        <br><br>
+        我们组里讨论过社保，骑手自己缴全额确实吃不消。
+        <span class="hl">公司和平台之间隔着几层劳务派遣，最后落到自己头上的保障就只剩每日的意外险</span>，三块钱一天，出事了才想起来它存在。
+      </div>
+      <div class="legend"><span class="sw"></span> AI 建议引用的原文片段（悬停查看对应代码）· 偏移量 <code class="inline">[128,176]</code> 等精确标注</div>
+    </section>
+
+    <!-- 中：AI 建议 → 研究决策 -->
+    <section class="card">
+      <div class="colhead">🤖 AI 编码建议 → 研究者决策 <span class="muted">3 条建议 · 1 已接受</span></div>
+      <div class="codes">
+
+        <div class="codecard" data-state="">
+          <div class="row1">
+            <span class="codelabel">平台抽成感知</span>
+            <span class="badge ai">AI 建议 · 待决策</span>
+          </div>
+          <div class="quote">“他从中抽自己骑手将近三成，讲话的环境强度很高，每一单都是倒计时”</div>
+          <div class="provenance"><span class="ok">✓ 已核验</span><span>访谈三·v1 [128,176]</span><span>SHA a3f9…8c2d</span></div>
+          <div class="rationale">骑手对平台抽成与劳动强度的归因表达，属开放编码第一层。</div>
+          <div class="actions">
+            <button class="act accept" onclick="decide(this,'accept')">✓ 接受</button>
+            <button class="act" onclick="decide(this,'edit')">✎ 编辑 payoff</button>
+            <button class="act reject" onclick="decide(this,'reject')">✕ 拒绝</button>
+            <button class="act" onclick="decide(this,'defer')">⏸ 搁置</button>
+          </div>
+        </div>
+
+        <div class="codecard edited">
+          <div class="row1">
+            <span class="codelabel">社会保障层级错位</span>
+            <span class="badge editedb">已编辑 · 研究者定稿</span>
+          </div>
+          <div class="quote">“公司和平台之间隔着几层劳务派遣，最后落到自己头上的保障就只剩每日的意外险”</div>
+          <div class="provenance"><span class="ok">✓ 已核验</span><span>访谈三·v1 [266,330]</span><span>SHA 91c4…d87e</span></div>
+          <div class="provenance" style="color:var(--violet-700)">✎ 研究者编辑记录 · 2026-10-22 14:52 · 修改理由：原标签“社保焦虑”过于笼统</div>
+          <details class="orig">
+            <summary>▸ 查看保留的 AI 原始建议</summary>
+            <div class="origtext">标签：社保焦虑 ｜ 理由：骑手提到社保话题时的无力感。AI 状态快照：status=suggested → edited（不可覆盖）</div>
+          </details>
+          <div class="actions"><button class="act reject" onclick="decide(this,'reject')">✕ 撤回定稿</button></div>
+        </div>
+
+        <div class="codecard rejected">
+          <div class="row1">
+            <span class="codelabel">算法疲劳</span>
+            <span class="badge rej">已拒绝</span>
+          </div>
+          <div class="quote">“倒计时跳红的时候心跳也跟着跳”</div>
+          <div class="provenance"><span class="ok">✓ 已核验</span><span>访谈三·v1 [152,168]</span></div>
+          <div class="provenance">✕ 研究者拒绝 · 理由：与“平台抽成感知”合并，引用同一证据链</div>
+          <div class="actions"><button class="act" onclick="decide(this,'defer')">⏸ 恢复为搁置</button></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 右：备忘录 + 饱和度 -->
+    <div class="memo-col">
+      <section class="card">
+        <div class="colhead">📝 备忘录 <span class="muted">4 条</span></div>
+        <div class="memos">
+          <div class="memo" style="border-color:var(--indigo-100); background:var(--indigo-50)">
+            <div class="mrow"><span class="who ai">🤖 AI 草稿</span><button class="act" style="font-size:9px; padding:2px 8px" onclick="confirmMemo(this)">转正</button></div>
+            倒计时的“心跳”隐喻在 3 位受访者反复出现，可考虑作核心范畴候选。
+          </div>
+          <div class="memo">
+            <div class="mrow"><span class="who ai-confirmed">🤖→👤 已采纳</span></div>
+            倒计时的“心跳”隐喻在 3 位受访者反复出现，可考虑作核心范畴候选。
+          </div>
+          <div class="memo">
+            <div class="mrow"><span class="who human">👤 研究者</span></div>
+            R04 与 R07 在社保话题上的差异可能与入职年份相关——待查编码记录。
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="colhead">🧭 饱和度评估 <span class="muted">研究者自评</span></div>
+        <div style="padding:12px; display:flex; flex-direction:column; gap:10px">
+          <div class="satnote"><span>ℹ️</span><span>系统不计算、不显示任何饱和度百分比。“饱和”是研究者本人基于证据的判断。</span></div>
+          <div class="field"><label>评估范围</label><textarea rows="2" readonly>初始编码 + 5 份访谈；类别层完成 3 个核心类别</textarea></div>
+          <div class="field"><label>判断</label>
+            <select><option>尚未饱和</option><option>类别层已饱和，理论编码待补</option><option>理论层面饱和</option></select>
+          </div>
+          <div class="field"><label>未决问题 / 反例</label><textarea>[]</textarea></div>
+          <div class="field"><label>研究判断（决策）与理由</label><textarea rows="3">尚未饱和：引入第 6 份访谈时出现新概念“信任边界”。</textarea></div>
+          <button class="btn ghost" style="align-self:flex-start">保存评估记录</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 不变量条 -->
+  <div class="footer-note">
+
+    <div class="invariant"><span class="ic">✓</span> AI 建议与研究决策全程可区分，编辑后 AI 原文永久保留</div>
+    <div class="invariant"><span class="ic">✓</span> 每条证据可定位到版本 + UTF-16 偏移 + SHA-256 哈希</div>
+    <div class="invariant"><span class="ic">✓</span> 幂等键：同一分析请求永不产生重复的运行记录</div>
+    <div class="invariant"><span class="ic">✓</span> 审计导出不含任何提供商密钥</div>
+  </div>
+
+  <footer class="copyright">© 2026 GT-Coding · 可审计扎根理论辅助研究平台 · MIT License · 数据与密钥不出本地节点（开发阶段）</footer>
+</main>
+
+<script>
+  // 纯演示：模拟运行状态推进（实际实现为后端异步 + 轮询）
+  function toggleRun() {
+    const steps = document.querySelectorAll('.step');
+    let i = 0;
+    const timer = setInterval(() => {
+      steps.forEach((s, j) => {
+        s.classList.remove('active');
+        s.querySelector('.dot').classList.remove('now', 'done');
+        if (j < i) s.querySelector('.dot').classList.add('done');
+      });
+      if (i <= 4) {
+        const labels = ['已排队', '模型生成建议', '校验证据引语', '落库建议', '完成'];
+        steps[i].classList.add('active');
+        steps[i].querySelector('.dot').classList.add(i === 4 ? 'done' : 'now');
+        steps[4].lastChild.textContent = labels[i];
+        i++;
+      } else { clearInterval(timer); }
+    }, 700);
+  }
+  // 纯演示：决策按钮切换卡片状态
+  function decide(btn, action) {
+    const card = btn.closest('.codecard');
+    if (action === 'accept') { card.className = 'codecard accepted'; badge(card, 'accepted · 研究者确认', 'researcher'); }
+    if (action === 'edit') { card.className = 'codecard edited'; badge(card, '已编辑 · 研究者定稿', 'editedb'); }
+    if (action === 'reject') { card.className = 'codecard rejected'; badge(card, '已拒绝', 'rej'); }
+    if (action === 'defer') { card.className = 'codecard'; badge(card, 'AI 建议 · 待决策', 'ai'); }
+  }
+  function badge(card, text, cls) {
+    const b = card.querySelector('.row1 .badge');
+    b.className = 'badge ' + cls;
+    b.textContent = text;
+  }
+  function confirmMemo(btn) {
+    const memo = btn.closest('.memo');
+    const who = memo.querySelector('.who');
+    who.className = 'who ai-confirmed';
+    who.textContent = '🤖→👤 已采纳';
+    btn.remove();
+  }
+</script>
+</body>
+</html>
+
