@@ -250,6 +250,26 @@ npm run dev
 | **程序化** | Procedural | Strauss & Corbin 方法，结构化的编码流程和备忘录 |
 | **建构式** | Constructivist | Charmaz 方法，强调研究者主体性和社会建构 |
 
+> 当前 MVP 仅启用**程序化**（procedural）范式。其余范式须在验证门（见下）通过后解锁。
+
+## 研究工作台 · 验证门（Validation Gate）
+
+研究工作台的核心承诺是：**理论饱和由研究者本人判断，AI 只是可被拒绝对证的建议来源，全程证据可审计**。
+
+在试点（pilot）数据上把以下门全部通过之前，不扩展第二套范式，也不解冻账号/计费：
+
+1. **去标识核查单**（D1–D7，禁原始语料入库）
+2. **知情/服务商合规门**（当前默认 `AI_PROVIDER=development` 离线模拟，不出机）
+3. **双评双盲评审**（证据准确性 / 代码区分度 / 反例处理 / AI-人归属 / 修改工作量）
+4. **通过标准**（零无效证据链接、幂等重放通过、导出再导入校验通过、双评审签认）
+
+协议全文与缺陷记录模板：
+
+| 文件 | 用途 |
+|------|------|
+| [`docs/validation/protocol.md`](docs/validation/protocol.md) | 核查单、合规门、评审协议与通过标准 |
+| [`docs/validation/pilot-scorecard.csv`](docs/validation/pilot-scorecard.csv) | 试点缺陷记录（**禁止**把语料贴进任何记录/issue） |
+
 ---
 
 ## API 接口文档

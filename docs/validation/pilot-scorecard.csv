@@ -1,0 +1,2 @@
+id,createdAt,reviewer,dimension,evidence_link,severity,description,status,disposition
+DEMO-0001,2026-10-22,reviewer-a,evidence_accuracy,assignment:PLACEHOLDER-ASSIGNMENT-ID,blocker,example: the quoted text cannot be located at the recorded offsets in the source version,open,replace this row with a real defect; never paste source text here
