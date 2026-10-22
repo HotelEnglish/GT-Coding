@@ -1,18 +1,8 @@
 import { SegmentDraft } from '../provenanceService';
-
-export interface CandidateCode {
-  label: string;
-  quote: string;
-  rationale: string;
-}
-
-export interface AnalysisCandidate {
-  codes: CandidateCode[];
-  memoDrafts: string[];
-}
+import { parseProviderOutput } from '../../schemas/analysisOutput';
 
 export interface ProviderResult {
-  candidate: AnalysisCandidate;
+  candidate: { codes: Array<{ label: string; quote: string; rationale: string }>; memoDrafts: string[] };
   provider: string;
   model: string;
   inputTokens?: number;
@@ -42,7 +32,12 @@ export class DevelopmentProvider implements AiProvider {
 }
 
 export class OpenAiCompatibleProvider implements AiProvider {
-  constructor(private readonly baseUrl: string, private readonly apiKey: string, private readonly model: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    private readonly apiKey: string,
+    private readonly model: string,
+    private readonly timeoutMs: number = Number(process.env.AI_TIMEOUT_MS || 120_000),
+  ) {}
 
   async analyze(segments: SegmentDraft[]): Promise<ProviderResult> {
     const source = segments.map((segment) => segment.text).join('\n');
@@ -58,12 +53,16 @@ export class OpenAiCompatibleProvider implements AiProvider {
           { role: 'user', content: source },
         ],
       }),
+      signal: AbortSignal.timeout(this.timeoutMs),
     });
     if (!response.ok) throw new Error(`模型服务请求失败：HTTP ${response.status}`);
-    const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }>; usage?: { prompt_tokens?: number; completion_tokens?: number } };
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
     const raw = payload.choices?.[0]?.message?.content;
     if (!raw) throw new Error('模型服务没有返回可解析内容。');
-    const candidate = parseCandidate(raw);
+    const { candidate } = parseProviderOutput(raw);
     return {
       candidate,
       provider: 'openai-compatible',
@@ -72,19 +71,6 @@ export class OpenAiCompatibleProvider implements AiProvider {
       outputTokens: payload.usage?.completion_tokens,
     };
   }
-}
-
-function parseCandidate(raw: string): AnalysisCandidate {
-  const parsed = JSON.parse(raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim()) as Partial<AnalysisCandidate>;
-  if (!Array.isArray(parsed.codes) || !Array.isArray(parsed.memoDrafts)) throw new Error('模型输出不符合候选分析结构。');
-  const codes = parsed.codes.map((code) => {
-    if (!code || typeof code.label !== 'string' || typeof code.quote !== 'string' || typeof code.rationale !== 'string') {
-      throw new Error('模型输出含有无效编码建议。');
-    }
-    return { label: code.label.trim(), quote: code.quote, rationale: code.rationale.trim() };
-  }).filter((code) => code.label && code.quote);
-  const memoDrafts = parsed.memoDrafts.filter((memo): memo is string => typeof memo === 'string' && memo.trim().length > 0);
-  return { codes, memoDrafts };
 }
 
 export function createAiProvider(): AiProvider {

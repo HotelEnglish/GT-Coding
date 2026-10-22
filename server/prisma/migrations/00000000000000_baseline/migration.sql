@@ -230,6 +230,8 @@ CREATE TABLE "code_assignments" (
     "origin" "ArtifactOrigin" NOT NULL,
     "status" "ReviewStatus" NOT NULL DEFAULT 'suggested',
     "rationale" TEXT,
+    "originalQuote" TEXT,
+    "originalRationale" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -265,6 +267,17 @@ CREATE TABLE "category_relationships" (
 );
 
 -- CreateTable
+CREATE TABLE "saturation_assessments" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "payload" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "saturation_assessments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "analysis_runs" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
@@ -272,6 +285,7 @@ CREATE TABLE "analysis_runs" (
     "documentVersionId" TEXT NOT NULL,
     "requestKey" TEXT NOT NULL,
     "status" "AnalysisRunStatus" NOT NULL DEFAULT 'queued',
+    "progress" TEXT,
     "errorMessage" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "startedAt" TIMESTAMP(3),
@@ -441,6 +455,9 @@ CREATE INDEX "analytic_memos_projectId_status_idx" ON "analytic_memos"("projectI
 CREATE INDEX "category_relationships_projectId_status_idx" ON "category_relationships"("projectId", "status");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "saturation_assessments_projectId_key" ON "saturation_assessments"("projectId");
+
+-- CreateIndex
 CREATE INDEX "analysis_runs_projectId_createdAt_idx" ON "analysis_runs"("projectId", "createdAt" DESC);
 
 -- CreateIndex
@@ -523,6 +540,9 @@ ALTER TABLE "category_relationships" ADD CONSTRAINT "category_relationships_sour
 
 -- AddForeignKey
 ALTER TABLE "category_relationships" ADD CONSTRAINT "category_relationships_targetCodeId_fkey" FOREIGN KEY ("targetCodeId") REFERENCES "research_codes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "saturation_assessments" ADD CONSTRAINT "saturation_assessments_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "research_projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "analysis_runs" ADD CONSTRAINT "analysis_runs_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "research_projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;

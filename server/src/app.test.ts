@@ -74,3 +74,59 @@ describe('POST /api/workbench/projects/:id/analysis-runs contract', () => {
     expect(res.body.success).toBe(false);
   });
 });
+
+describe('POST /api/workbench/code-assignments/:id/decisions contract', () => {
+  it('rejects an unknown decision action before any data access', async () => {
+    const res = await request(app)
+      .post('/api/workbench/code-assignments/a1/decisions')
+      .send({ action: 'approve' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects non-string edited quote', async () => {
+    const res = await request(app)
+      .post('/api/workbench/code-assignments/a1/decisions')
+      .send({ action: 'edit', quote: 42 });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+});
+
+describe('POST /api/workbench/memos contract', () => {
+  it('rejects empty memo content', async () => {
+    const res = await request(app)
+      .post('/api/workbench/memos')
+      .send({ projectId: 'p', content: ' ' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+});
+
+describe('POST /api/workbench/memos/:id/decisions contract', () => {
+  it('rejects an unknown memo decision action', async () => {
+    const res = await request(app)
+      .post('/api/workbench/memos/m1/decisions')
+      .send({ action: 'edit' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+});
+
+describe('PUT /api/workbench/projects/:id/saturation-assessment contract', () => {
+  it('rejects an assessment without a researcher decision', async () => {
+    const res = await request(app)
+      .put('/api/workbench/projects/p/saturation-assessment')
+      .send({ payload: { scope: 'x' } });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects a non-object payload', async () => {
+    const res = await request(app)
+      .put('/api/workbench/projects/p/saturation-assessment')
+      .send({ payload: 'reached' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+});

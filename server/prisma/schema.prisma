@@ -267,6 +267,7 @@ model ResearchProject {
   memos           AnalyticMemo[]
   analysisRuns    AnalysisRun[]
   relationships   CategoryRelationship[]
+  saturationAssessment SaturationAssessment?
 
   @@index([workspaceId, updatedAt(sort: Desc)])
   @@map("research_projects")
@@ -349,6 +350,8 @@ model CodeAssignment {
   origin          ArtifactOrigin
   status          ReviewStatus  @default(suggested)
   rationale       String?       @db.Text
+  originalQuote     String?     @db.Text
+  originalRationale String?     @db.Text
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -393,6 +396,17 @@ model CategoryRelationship {
   @@map("category_relationships")
 }
 
+model SaturationAssessment {
+  id        String          @id @default(cuid())
+  projectId String          @unique
+  project   ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  payload   Json
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@map("saturation_assessments")
+}
+
 model AnalysisRun {
   id                String                @id @default(cuid())
   workspaceId       String
@@ -402,6 +416,7 @@ model AnalysisRun {
   documentVersion   SourceDocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
   requestKey        String
   status            AnalysisRunStatus    @default(queued)
+  progress          String?
   errorMessage      String?
   createdAt         DateTime              @default(now())
   startedAt         DateTime?
