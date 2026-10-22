@@ -19,7 +19,7 @@ type AuthView = 'main' | 'login' | 'register' | 'forgot-password';
 
 export default function App() {
   const store = useAppStore();
-  const { isAuthenticated, checkAuth, isLoading: authLoading } = useAuthStore();
+  const { checkAuth, isLoading: authLoading } = useAuthStore();
   const [authView, setAuthView] = useState<AuthView>('main');
 
   useEffect(() => {

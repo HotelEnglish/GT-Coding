@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getUsers, toggleUserStatus, addCredits } from '../../utils/adminApi';
-import type { UserListItem, PaginatedResponse } from '../../types';
+import type { PaginatedResponse } from '../../types';
+import type { UserListItem } from '../../utils/adminApi';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 

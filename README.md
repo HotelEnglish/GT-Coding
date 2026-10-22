@@ -148,6 +148,20 @@ npm install
 cd ..
 ```
 
+### 验证命令（改动后必跑）
+
+| 命令 | 目录 | 说明 |
+|------|------|------|
+| `npm run typecheck` | 根目录 | 前端 TypeScript 严格类型检查 |
+| `npm test` | 根目录 | 前端 Vitest + Testing Library 测试 |
+| `npm run typecheck` | server/ | 后端 TypeScript 严格类型检查 |
+| `npm test` | server/ | 后端 Vitest + Supertest 测试 |
+| `npm run build` | 根目录 / server/ | 前端单文件构建 / 后端 tsc 产出 |
+
+> 迁移验证（可选）：设置 `DATABASE_URL_TEST` 指向一个空的一次性数据库后运行
+> `cd server && npm test`，将自动执行 `prisma migrate deploy` 并校验迁移可重复应用；
+> 未设置该变量时迁移测试自动跳过。
+
 ### 3. 配置环境变量
 
 ```bash

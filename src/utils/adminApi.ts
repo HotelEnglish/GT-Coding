@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import type { ApiResponse, PaginatedResponse, RechargeOrder, OrderStatus, User } from '../types';
+import type { ApiResponse, PaginatedResponse, RechargeOrder, OrderStatus } from '../types';
 
 export interface AdminLoginResponse {
   admin: {

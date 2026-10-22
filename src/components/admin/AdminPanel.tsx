@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { adminLogin, adminLogout } from '../../utils/adminApi';
 import { useAppStore } from '../../store/useAppStore';
 import { OrderManagement } from './OrderManagement';

@@ -6,7 +6,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 
 export const CheckInSection: React.FC = () => {
-  const { user, refreshUser } = useAuthStore();
+  const { refreshUser } = useAuthStore();
   const [status, setStatus] = useState<CheckInStatusType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +49,6 @@ export const CheckInSection: React.FC = () => {
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth();
-    const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     
