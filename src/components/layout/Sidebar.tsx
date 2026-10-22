@@ -63,8 +63,17 @@ const IconAdmin = () => (
   </svg>
 );
 
+const IconSearch = () => (
+  <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+    <circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1.3" />
+    <path d="M9 9l3.5 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    <path d="M6 4.5v3M4.5 6h3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+  </svg>
+);
+
 const NAV_ITEMS: NavItem[] = [
-  { id: 'coding', label: '编码工作台', icon: <IconGrid />, section: '功能模块' },
+  { id: 'workbench', label: '研究工作台', icon: <IconSearch />, section: '核心工作流' },
+  { id: 'coding', label: '编码工作台（旧版快照）', icon: <IconGrid />, section: '核心工作流' },
   { id: 'library', label: '参考文献库', icon: <IconBook /> },
   { id: 'terminology', label: '专业术语设置', icon: <IconTag /> },
   { id: 'settings', label: 'API 配置', icon: <IconSettings /> },

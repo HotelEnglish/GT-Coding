@@ -3,7 +3,8 @@ import { ActiveModule } from '@/types';
 import { useAuthStore } from '../../store/useAuthStore';
 
 const MODULE_TITLES: Record<ActiveModule, { title: string; subtitle: string }> = {
-  coding: { title: '编码工作台', subtitle: '选择理论范式，上传或粘贴访谈数据，开始智能编码' },
+  workbench: { title: '研究工作台', subtitle: '可审计的扎根理论分析：逐条证据引语核验、研究决策与饱和度自评' },
+  coding: { title: '编码工作台（旧版快照）', subtitle: '仅供回看历史结果，已停止新的分析' },
   library: { title: '参考文献库', subtitle: 'AI 学习领域论文，编码时自动注入专业背景知识' },
   terminology: { title: '专业术语设置', subtitle: '定义语言风格与术语对照，规范编码词汇' },
   settings: { title: 'API 配置', subtitle: '配置大模型 API，支持 Anthropic / OpenAI 兼容接口' },

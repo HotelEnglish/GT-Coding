@@ -110,7 +110,7 @@ export interface MemoItem {
 // APP STATE TYPES
 // ==========================================
 
-export type ActiveModule = 'coding' | 'library' | 'terminology' | 'settings' | 'guide' | 'user-center' | 'admin';
+export type ActiveModule = 'workbench' | 'coding' | 'library' | 'terminology' | 'settings' | 'guide' | 'user-center' | 'admin';
 
 export type CodingDepth = 'std' | 'deep';
 
