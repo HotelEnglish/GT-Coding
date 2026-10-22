@@ -52,6 +52,7 @@ export const wsDocumentSchema = z.object({
     z.object({
       id: z.string(),
       version: z.number(),
+      content: z.string(),
       contentHash: z.string(),
       createdAt: z.string(),
       segments: z.array(wsSegmentSchema),

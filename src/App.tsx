@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
+import { ProjectWorkspace } from '@/components/workbench/ProjectWorkspace';
 import { CodingModule } from '@/components/coding/CodingModule';
 import { LibraryModule } from '@/components/library/LibraryModule';
 import { TerminologyModule } from '@/components/terminology/TerminologyModule';
@@ -112,6 +113,8 @@ export default function App() {
         />
 
         <main className="flex-1 overflow-y-auto px-6 py-5">
+          {store.activeModule === 'workbench' && <ProjectWorkspace />}
+
           {store.activeModule === 'coding' && (
             <CodingModule
               selectedTheory={store.selectedTheory}
