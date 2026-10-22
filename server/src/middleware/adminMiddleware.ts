@@ -78,7 +78,7 @@ export async function adminAuthMiddleware(req: Request, res: Response, next: Nex
       email: session.admin.email,
     };
 
-    next();
+    return next();
   } catch (error) {
     console.error('Admin auth middleware error:', error);
     return res.status(500).json({

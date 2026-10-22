@@ -88,7 +88,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       email: session.user.email,
     };
 
-    next();
+    return next();
   } catch (error) {
     console.error('Auth middleware error:', error);
     return res.status(500).json({
@@ -105,7 +105,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
  * Optional authentication middleware
  * Sets user if logged in, but doesn't require authentication
  */
-export async function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function optionalAuthMiddleware(req: Request, _res: Response, next: NextFunction) {
   try {
     const token = req.cookies?.session_token;
 
@@ -129,7 +129,7 @@ export async function optionalAuthMiddleware(req: Request, res: Response, next: 
       }
     }
 
-    next();
+    return next();
   } catch (error) {
     console.error('Optional auth middleware error:', error);
     next();

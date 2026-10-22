@@ -13,7 +13,9 @@ export interface JwtPayload {
  * Generate a JWT token for a user
  */
 export function generateToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN as import('jsonwebtoken').SignOptions['expiresIn'],
+  });
 }
 
 /**

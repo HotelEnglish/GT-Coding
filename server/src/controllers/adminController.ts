@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/db';
-import { comparePassword, hashPassword } from '../utils/password';
-import { generateSecureToken, hashToken, calculateSessionExpiration } from '../utils/jwt';
+import { comparePassword } from '../utils/password';
+import { generateSecureToken, hashToken } from '../utils/jwt';
 import { addCredits } from '../services/creditService';
 import { sendOrderStatusEmail } from '../services/emailService';
 

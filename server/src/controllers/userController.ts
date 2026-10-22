@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
-import { getCreditHistory, getUsageStats } from '../services/creditService';
+import {
+  getCreditHistory as fetchCreditHistory,
+  getUsageStats as fetchUsageStats,
+} from '../services/creditService';
 import { TransactionType } from '@prisma/client';
 
 /**
@@ -37,7 +40,7 @@ export async function getCreditHistory(req: Request, res: Response) {
       filters.endDate = new Date(String(endDate));
     }
 
-    const result = await getCreditHistory(
+    const result = await fetchCreditHistory(
       userId,
       parseInt(String(page), 10),
       parseInt(String(limit), 10),
@@ -72,7 +75,7 @@ export async function getUsageStats(req: Request, res: Response) {
       });
     }
 
-    const stats = await getUsageStats(userId);
+    const stats = await fetchUsageStats(userId);
 
     return res.json({
       success: true,

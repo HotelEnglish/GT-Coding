@@ -43,7 +43,7 @@ export async function sendVerification(req: Request, res: Response) {
           success: false,
           error: { code: 'AUTH_EMAIL_NOT_REGISTERED', message: '该邮箱未注册' },
         });
-      });
+      }
     }
 
     // Invalidate previous unused codes for this email and purpose

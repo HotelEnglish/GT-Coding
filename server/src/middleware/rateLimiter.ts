@@ -63,7 +63,7 @@ export function verificationCodeRateLimiter(req: Request, res: Response, next: N
     };
   }
 
-  next();
+  return next();
 }
 
 /**
@@ -117,7 +117,7 @@ export function loginRateLimiter(req: Request, res: Response, next: NextFunction
     };
   }
 
-  next();
+  return next();
 }
 
 /**
