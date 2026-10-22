@@ -26,9 +26,6 @@ npm-debug.log*
 # Testing
 coverage/
 
-# Prisma migrations (generated, not source)
-server/prisma/migrations/
-
 # Misc
 *.pem
 .cache/

@@ -9,6 +9,7 @@ import checkInRoutes from './routes/checkInRoutes';
 import rechargeRoutes from './routes/rechargeRoutes';
 import adminRoutes from './routes/adminRoutes';
 import codingRoutes from './routes/codingRoutes';
+import workbenchRoutes from './routes/workbenchRoutes';
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use('/api/checkin', checkInRoutes);
 app.use('/api/recharge', rechargeRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/coding', codingRoutes);
+app.use('/api/workbench', workbenchRoutes);
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

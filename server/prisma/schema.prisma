@@ -225,6 +225,227 @@ model CodingTask {
 }
 
 // ==========================================
+// RESEARCH WORKBENCH MODELS (FUNCTIONAL MVP)
+// ==========================================
+
+enum MethodologyProfile {
+  procedural
+}
+
+enum AnalysisRunStatus {
+  queued
+  running
+  completed
+  failed
+  cancelled
+}
+
+enum ArtifactOrigin {
+  ai
+  researcher
+}
+
+enum ReviewStatus {
+  suggested
+  accepted
+  edited
+  rejected
+  deferred
+}
+
+model ResearchProject {
+  id           String             @id @default(cuid())
+  workspaceId  String
+  title        String
+  researchQuestion String?
+  methodology  MethodologyProfile @default(procedural)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  documents       SourceDocument[]
+  codes           ResearchCode[]
+  memos           AnalyticMemo[]
+  analysisRuns    AnalysisRun[]
+  relationships   CategoryRelationship[]
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@map("research_projects")
+}
+
+model SourceDocument {
+  id          String          @id @default(cuid())
+  projectId   String
+  project     ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  createdAt   DateTime        @default(now())
+
+  versions SourceDocumentVersion[]
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@map("source_documents")
+}
+
+model SourceDocumentVersion {
+  id          String         @id @default(cuid())
+  documentId  String
+  document    SourceDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version     Int
+  content     String         @db.Text
+  contentHash String
+  createdAt   DateTime       @default(now())
+
+  segments    SourceSegment[]
+  analysisRuns AnalysisRun[]
+
+  @@unique([documentId, version])
+  @@index([contentHash])
+  @@map("source_document_versions")
+}
+
+model SourceSegment {
+  id                String                @id @default(cuid())
+  documentVersionId String
+  documentVersion   SourceDocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+  startOffset       Int
+  endOffset         Int
+  text              String                @db.Text
+  contentHash       String
+  createdAt         DateTime              @default(now())
+
+  assignments CodeAssignment[]
+
+  @@unique([documentVersionId, startOffset, endOffset])
+  @@index([documentVersionId, startOffset])
+  @@map("source_segments")
+}
+
+model ResearchCode {
+  id          String          @id @default(cuid())
+  projectId   String
+  project     ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label       String
+  definition  String?
+  origin      ArtifactOrigin
+  status      ReviewStatus   @default(suggested)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  assignments        CodeAssignment[]
+  sourceRelationships CategoryRelationship[] @relation("RelationshipSourceCode")
+  targetRelationships CategoryRelationship[] @relation("RelationshipTargetCode")
+
+  @@unique([projectId, label])
+  @@index([projectId, status])
+  @@map("research_codes")
+}
+
+model CodeAssignment {
+  id              String        @id @default(cuid())
+  codeId          String
+  code            ResearchCode  @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  sourceSegmentId String
+  sourceSegment   SourceSegment @relation(fields: [sourceSegmentId], references: [id], onDelete: Cascade)
+  evidenceQuote   String        @db.Text
+  origin          ArtifactOrigin
+  status          ReviewStatus  @default(suggested)
+  rationale       String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  decisions ResearchDecision[]
+
+  @@index([sourceSegmentId])
+  @@index([codeId, status])
+  @@map("code_assignments")
+}
+
+model AnalyticMemo {
+  id        String          @id @default(cuid())
+  projectId String
+  project   ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  content   String          @db.Text
+  origin    ArtifactOrigin
+  status    ReviewStatus   @default(suggested)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  decisions ResearchDecision[]
+
+  @@index([projectId, status])
+  @@map("analytic_memos")
+}
+
+model CategoryRelationship {
+  id           String          @id @default(cuid())
+  projectId    String
+  project      ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceCodeId String
+  sourceCode   ResearchCode    @relation("RelationshipSourceCode", fields: [sourceCodeId], references: [id], onDelete: Cascade)
+  targetCodeId String
+  targetCode   ResearchCode    @relation("RelationshipTargetCode", fields: [targetCodeId], references: [id], onDelete: Cascade)
+  relationType String
+  rationale    String?         @db.Text
+  origin       ArtifactOrigin
+  status       ReviewStatus    @default(suggested)
+  createdAt    DateTime        @default(now())
+
+  @@index([projectId, status])
+  @@map("category_relationships")
+}
+
+model AnalysisRun {
+  id                String                @id @default(cuid())
+  workspaceId       String
+  projectId         String
+  project           ResearchProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentVersionId String
+  documentVersion   SourceDocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  requestKey        String
+  status            AnalysisRunStatus    @default(queued)
+  errorMessage      String?
+  createdAt         DateTime              @default(now())
+  startedAt         DateTime?
+  completedAt       DateTime?
+
+  modelRun ModelRun?
+
+  @@unique([workspaceId, requestKey])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@map("analysis_runs")
+}
+
+model ModelRun {
+  id              String      @id @default(cuid())
+  analysisRunId   String      @unique
+  analysisRun     AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  provider        String
+  model           String
+  promptVersion   String
+  inputTokens     Int?
+  outputTokens    Int?
+  latencyMs       Int?
+  requestMetadata Json?
+  createdAt       DateTime    @default(now())
+
+  @@map("model_runs")
+}
+
+model ResearchDecision {
+  id               String         @id @default(cuid())
+  codeAssignmentId String?
+  codeAssignment   CodeAssignment? @relation(fields: [codeAssignmentId], references: [id], onDelete: Cascade)
+  memoId           String?
+  memo             AnalyticMemo? @relation(fields: [memoId], references: [id], onDelete: Cascade)
+  action           ReviewStatus
+  rationale        String?        @db.Text
+  createdAt        DateTime       @default(now())
+
+  @@index([codeAssignmentId, createdAt])
+  @@index([memoId, createdAt])
+  @@map("research_decisions")
+}
+
+// ==========================================
 // VERIFICATION CODE MODEL
 // ==========================================
 

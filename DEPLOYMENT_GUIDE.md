@@ -58,7 +58,7 @@ npm install
 
 #### 2.2.3 配置环境变量
 
-复制 `.env.example` 为 `.env` 并配置：
+复制 `server/.env.example` 为 `server/.env` 并配置：
 ```cmd
 copy .env.example .env
 ```
@@ -84,22 +84,26 @@ PORT=3001
 NODE_ENV=development
 FRONTEND_URL="http://localhost:5173"
 
-# 微信支付二维码 (替换为实际URL)
-WECHAT_QR_BASIC="https://example.com/qr/basic.png"
-WECHAT_QR_STANDARD="https://example.com/qr/standard.png"
-WECHAT_QR_PREMIUM="https://example.com/qr/premium.png"
+# 功能验证阶段：默认使用开发 Provider，不会发送资料到第三方模型
+AI_PROVIDER="development"
+
+# 仅在完成研究数据审批后启用真实 OpenAI 兼容服务
+# AI_PROVIDER="openai-compatible"
+# AI_API_BASE_URL="https://api.example.com"
+# AI_API_KEY="replace-me"
+# AI_MODEL="replace-me"
 ```
 
 **注意：** Gmail 需要使用"应用专用密码"，在 Google 账户安全设置中生成。
 
 #### 2.2.4 运行数据库迁移
 ```cmd
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 ```
 
 如果成功，会看到类似输出：
 ```
-✓ Applied migration 20240515_init
+✓ Applied pending migrations
 ```
 
 #### 2.2.5 生成 Prisma 客户端
@@ -327,7 +331,7 @@ npm run build
 - 检查 DATABASE_URL 配置
 
 **问题：** `Error: P2002: Unique constraint failed`
-- 数据库已有数据，删除重新迁��
+- 不要删除研究数据库。先备份，再检查重复数据、迁移历史和约束定义。
 
 ### 6.2 邮件发送失败
 
