@@ -102,7 +102,9 @@ export const DecisionControls: React.FC<DecisionControlsProps> = ({ assignment, 
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <Badge variant={badge.variant}>{badge.label}</Badge>
         {!evidenceVerified && (
-          <Badge variant="danger" data-testid="evidence-failed">证据校验失败 · 禁止接受</Badge>
+          <span data-testid="evidence-failed" className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+            证据校验失败 · 禁止接受
+          </span>
         )}
       </div>
       <div className="flex flex-wrap gap-2">
