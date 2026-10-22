@@ -21,7 +21,14 @@ describe('App shell', () => {
     expect((await screen.findAllByText('API 配置')).length).toBeGreaterThan(0);
   });
 
-  it.todo('labels the legacy coding module as a legacy snapshot (Phase 3 / T3.2)');
+  it('labels the legacy coding module as a legacy snapshot', async () => {
+    render(<App />);
+
+    const banner = await screen.findByText(/旧版快照/);
+    const container = banner.closest('div');
+    expect(container?.textContent).toContain('仅供回看历史编码结果');
+    expect(container?.textContent).toContain('旧版快照');
+  });
 
   it.todo('rejects approving suggestions with failed evidence validation (Phase 4)');
 });

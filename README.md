@@ -287,12 +287,11 @@ npm run dev
 | POST | `/api/recharge/order` | 创建充值订单 |
 | GET | `/api/recharge/orders` | 获取用户订单 |
 
-### 编码
+### 编码（已停用）
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/coding/check-credits` | 检查积分余额 |
-| POST | `/api/coding/analyze` | 执行编码分析 |
+| * | `/api/coding/*` | **410 Gone** — 旧版模拟编码接口已默认停用（`LEGACY_CODING_ENABLED=true` 可在本地临时启用）。请改用研究工作台 `/api/workbench/*` |
 
 ### 管理员
 

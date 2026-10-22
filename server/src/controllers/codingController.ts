@@ -4,6 +4,7 @@ import {
   calculateRequiredCredits,
   hasSufficientCredits,
   deductCredits,
+  addCredits,
   getCreditBalance,
 } from '../services/creditService';
 
@@ -120,33 +121,29 @@ export async function analyze(req: Request, res: Response) {
       });
     }
 
-    // Deduct credits and create coding task record
-    let deductionResult;
+    // Deduct credits and record the coding task. These are sequential:
+    // deductCredits manages its own transaction, so nesting it here would
+    // violate Prisma's single-interactive-transaction rule.
+    let remainingBalance: number;
     try {
-      // Create coding task and deduct credits in transaction
-      const codingTask = await prisma.$transaction(async (tx) => {
-        // Create coding task record
-        const task = await tx.codingTask.create({
+      const deduction = await deductCredits(userId, requiredCredits, '编码消耗');
+      try {
+        await prisma.codingTask.create({
           data: {
             userId,
             inputTextLength: text.length,
             creditsConsumed: requiredCredits,
-            theory,
-            depth,
+            theory: String(theory ?? 'procedural'),
+            depth: String(depth ?? 'std'),
             resultStored: true,
           },
         });
-
-        // Deduct credits
-        await deductCredits(userId, requiredCredits, '编码消耗', task.id);
-
-        return task;
-      });
-
-      deductionResult = {
-        balance: await getCreditBalance(userId),
-        transactionNumber: codingTask.id,
-      };
+      } catch (taskError) {
+        // Do not keep credits without a stored task record.
+        await addCredits(userId, requiredCredits, 'admin_adjustment', '编码任务创建失败自动退款');
+        throw taskError;
+      }
+      remainingBalance = deduction.balance;
     } catch (deductionError) {
       console.error('Credit deduction error:', deductionError);
       // Return error but don't charge for failed transactions
@@ -161,7 +158,7 @@ export async function analyze(req: Request, res: Response) {
       data: {
         result: codingResult.result,
         creditsDeducted: requiredCredits,
-        remainingBalance: deductionResult.balance,
+        remainingBalance,
       },
     });
   } catch (error) {

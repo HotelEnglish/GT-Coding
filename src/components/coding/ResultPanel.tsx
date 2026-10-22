@@ -14,7 +14,7 @@ interface ResultPanelProps {
   onNewAnalysis: () => void;
 }
 
-type ResultTab = 'table' | 'tree' | 'saturation' | 'memo';
+type ResultTab = 'table' | 'tree' | 'memo';
 
 export const ResultPanel: React.FC<ResultPanelProps> = ({
   result,
@@ -74,16 +74,9 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
     }
   });
 
-  // Saturation
-  const sp = Math.min(100, Math.round((scCount / 5) * 100));
-  const ap = Math.min(100, Math.round((acCount / 15) * 100));
-  const op = Math.min(100, Math.round((ocCount / 30) * 100));
-  const avg = Math.round((sp + ap + op) / 3);
-
   const TABS: { id: ResultTab; label: string }[] = [
     { id: 'table', label: '表格视图' },
     { id: 'tree', label: '树形视图' },
-    { id: 'saturation', label: '饱和度分析' },
     { id: 'memo', label: `备忘录 (${memos.length})` },
   ];
 
@@ -237,60 +230,6 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       )}
 
-      {/* SATURATION VIEW */}
-      {activeTab === 'saturation' && (
-        <div className="p-4 space-y-4">
-          <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-            <div className="text-sm font-semibold text-gray-800">理论饱和度参考指标</div>
-            {[
-              { label: cfg.codingLevels.level1, pct: sp, count: scCount, bar: 'bg-indigo-500', max: '建议 3–5 个' },
-              { label: cfg.codingLevels.level2, pct: ap, count: acCount, bar: 'bg-violet-500', max: '建议 8–15 个' },
-              { label: cfg.codingLevels.level3, pct: op, count: ocCount, bar: 'bg-teal-500', max: '建议 20+ 个' },
-            ].map(({ label, pct, count, bar, max }) => (
-              <div key={label} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-700">{label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-gray-400">{max}</span>
-                    <span className="text-xs font-bold text-gray-900 w-6 text-right">{count}</span>
-                  </div>
-                </div>
-                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={cn('h-full rounded-full transition-all duration-700', bar)}
-                    style={{ width: pct + '%' }}
-                  />
-                </div>
-              </div>
-            ))}
-            <div className={cn(
-              'mt-2 rounded-lg px-3 py-2.5 text-xs font-medium',
-              avg >= 75 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : avg >= 45 ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                  : 'bg-red-50 text-red-700 border border-red-200'
-            )}>
-              {avg >= 75 ? '✓ 理论饱和度较高：各片段提取的编码数量充足。'
-                : avg >= 45 ? '⚠ 理论饱和度中等：建议继续补充访谈材料。'
-                  : '✗ 理论饱和度偏低：编码稀疏，请补充更多访谈数据。'}
-            </div>
-          </div>
-
-          {result.memo_suggestions?.length > 0 && (
-            <div className="bg-indigo-50 rounded-xl p-4">
-              <div className="text-xs font-semibold text-indigo-800 mb-2">AI 理论要点提示</div>
-              <ul className="space-y-1.5">
-                {[...new Set(result.memo_suggestions)].map((m, i) => (
-                  <li key={i} className="text-xs text-indigo-700 flex items-start gap-1.5">
-                    <span className="mt-0.5 shrink-0">•</span>
-                    <span>{m}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* MEMO VIEW */}
       {activeTab === 'memo' && (
         <div className="p-4 space-y-4">
@@ -335,6 +274,20 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
               </div>
             )}
           </div>
+
+          {result.memo_suggestions?.length > 0 && (
+            <div className="bg-indigo-50 rounded-xl p-4">
+              <div className="text-xs font-semibold text-indigo-800 mb-2">AI 理论要点提示（建议）</div>
+              <ul className="space-y-1.5">
+                {[...new Set(result.memo_suggestions)].map((m, i) => (
+                  <li key={i} className="text-xs text-indigo-700 flex items-start gap-1.5">
+                    <span className="mt-0.5 shrink-0">•</span>
+                    <span>{m}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

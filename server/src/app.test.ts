@@ -130,3 +130,16 @@ describe('PUT /api/workbench/projects/:id/saturation-assessment contract', () =>
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 });
+
+describe("GET /api/coding deprecated gate", () => {
+  it("returns 410 for /api/coding/analyze when legacy flag is off", async () => {
+    const res = await request(app).post("/api/coding/analyze").send({ text: "x" });
+    expect(res.status).toBe(410);
+    expect(res.body.error.code).toBe("ENDPOINT_DEPRECATED");
+  });
+
+  it("returns 410 for /api/coding/check-credits when legacy flag is off", async () => {
+    const res = await request(app).post("/api/coding/check-credits").send({ textLength: 10 });
+    expect(res.status).toBe(410);
+  });
+});

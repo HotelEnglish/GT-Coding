@@ -1,7 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { TheoryParadigm, CodingResult, CodingDepth, ReferenceDoc, TerminologyConfig, ApiConfig } from '@/types';
-import { THEORY_CONFIGS } from '@/constants/theories';
-import { callAPI, extractText, chunkText, robustJSONParse, mergeCodingData } from '@/utils/api';
 import { TheorySelector } from './TheorySelector';
 import { InputPanel } from './InputPanel';
 import { ResultPanel } from './ResultPanel';
@@ -18,82 +16,14 @@ interface CodingModuleProps {
   referenceDocs: ReferenceDoc[];
   terminology: TerminologyConfig;
   apiConfig: ApiConfig;
-  memos: import('@/types').MemoItem[];
+  memos: MemoItem[];
   onAddMemo: (text: string, isAI?: boolean, theory?: TheoryParadigm) => void;
   onGoSettings: () => void;
 }
 
-interface Progress {
-  current: number;
-  total: number;
-  msg: string;
-}
+type MemoItem = import('@/types').MemoItem;
 
-function buildSystemPrompt(
-  theory: TheoryParadigm,
-  domain: string,
-  depth: CodingDepth,
-  referenceDocs: ReferenceDoc[],
-  terminology: TerminologyConfig
-): string {
-  const cfg = THEORY_CONFIGS[theory];
-  const isDeep = depth === 'deep';
-
-  // Reference library knowledge
-  const refSection = referenceDocs
-    .filter((d) => d.summaryStatus === 'done' && d.summary)
-    .map((d, i) => `【参考文献 ${i + 1}：${d.name}】\n${d.summary}`)
-    .join('\n\n');
-
-  // Terminology section
-  const termLines = terminology.terms
-    .map((t) => `  - 用"${t.specific}"替代"${t.general}"`)
-    .join('\n');
-  const termSection =
-    terminology.styleDescription || terminology.terms.length > 0
-      ? `\n【专业术语与语言规范】\n${terminology.styleDescription ? terminology.styleDescription + '\n' : ''}${termLines ? '术语替换规则：\n' + termLines : ''}`
-      : '';
-
-  const refNote = refSection
-    ? `\n【领域参考文献摘要（供学术规范参考）】\n${refSection}\n`
-    : '';
-
-  return `你是一位扎根理论研究专家，当前使用【${cfg.name}】进行编码分析。
-
-${cfg.promptGuidance}
-${domain ? `\n研究领域：${domain}` : ''}${termSection}${refNote}
-
-【编码层级对应】
-- 第一层：${cfg.codingLevels.level1}（最高抽象，统摄整体）
-- 第二层：${cfg.codingLevels.level2}（中间范畴，归纳属性）
-- 第三层：${cfg.codingLevels.level3}（贴近原文，具体可感）
-
-【极其重要的输出要求】
-1. 严格只输出合法的 JSON 格式，不要包含任何 Markdown 标记或代码块。
-2. 引语中如果有双引号必须用反斜杠转义 (\\"）。
-3. 禁止输出未转义换行符，全部替换为空格。
-4. JSON 结构：
-{
-  "selective_codes": [
-    {
-      "label": "${cfg.codingLevels.level1}名称",
-      "axial_codes": [
-        {
-          "label": "${cfg.codingLevels.level2}名称",
-          "open_codes": [
-            {
-              "label": "${cfg.codingLevels.level3}名称",
-              "quote": "原文典型引语20-50字"${isDeep ? ',\n              "note": "范畴说明1-2句"' : ''}
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "core_category": "核心范畴或核心变量的简要描述",
-  "memo_suggestions": ["理论备忘要点1", "理论备忘要点2"]
-}`;
-}
+type Progress = { current: number; total: number; msg: string };
 
 export const CodingModule: React.FC<CodingModuleProps> = ({
   selectedTheory,
@@ -111,87 +41,35 @@ export const CodingModule: React.FC<CodingModuleProps> = ({
   onAddMemo,
   onGoSettings,
 }) => {
-  const [isRunning, setIsRunning] = useState(false);
-  const [progress, setProgress] = useState<Progress | null>(null);
+  const isRunning = false;
+  const progress: Progress | null = null;
   const [errorMsg, setErrorMsg] = useState('');
+  const [legacyRunBlocked, setLegacyRunBlocked] = useState(false);
 
-  const handleRun = useCallback(
-    async (text: string) => {
-      if (!text) { setErrorMsg('请先粘贴文本或上传访谈文件。'); return; }
-      if (!selectedTheory) { setErrorMsg('请先选择扎根理论范式。'); return; }
-
-      setErrorMsg('');
-      setIsRunning(true);
-      setProgress({ current: 0, total: 1, msg: '正在准备分析…' });
-
-      const systemPrompt = buildSystemPrompt(
-        selectedTheory,
-        domain,
-        codingDepth,
-        referenceDocs,
-        terminology
-      );
-
-      try {
-        const chunks = chunkText(text, 2500);
-        const masterData: CodingResult = {
-          selective_codes: [],
-          core_category: '',
-          memo_suggestions: [],
-          theory: selectedTheory,
-          timestamp: Date.now(),
-        };
-
-        for (let i = 0; i < chunks.length; i++) {
-          setProgress({
-            current: i,
-            total: chunks.length,
-            msg: `正在分析文本片段 ${i + 1} / ${chunks.length}…`,
-          });
-
-          const prompt = `请对以下访谈文本片段进行${THEORY_CONFIGS[selectedTheory].name}编码：\n\n${chunks[i]}`;
-          const resp = await callAPI(prompt, systemPrompt, apiConfig, 4000);
-
-          if (!resp.ok) {
-            const e = await resp.json().catch(() => ({})) as { error?: { message?: string } };
-            throw new Error(`片段 ${i + 1} 请求失败：` + (e.error?.message || `HTTP ${resp.status}`));
-          }
-
-          const raw = extractText(await resp.json(), apiConfig.mode);
-          const chunk = robustJSONParse(raw);
-          mergeCodingData(masterData, chunk);
-        }
-
-        setProgress({ current: chunks.length, total: chunks.length, msg: '分析完成，渲染视图中…' });
-
-        // Clean empty
-        masterData.selective_codes = masterData.selective_codes.filter((s) => s.label);
-
-        // Add AI memos
-        if (masterData.memo_suggestions?.length) {
-          [...new Set(masterData.memo_suggestions)].forEach((m) => {
-            onAddMemo('[AI建议] ' + m, true, selectedTheory);
-          });
-        }
-
-        onCodingResult(masterData);
-      } catch (e) {
-        setErrorMsg('分析过程出错：' + String(e));
-      } finally {
-        setIsRunning(false);
-        setProgress(null);
-      }
-    },
-    [selectedTheory, domain, codingDepth, referenceDocs, terminology, apiConfig, onAddMemo, onCodingResult]
-  );
+  const handleRun = async () => {
+    setErrorMsg('');
+    setLegacyRunBlocked(true);
+  };
 
   const handleNewAnalysis = () => {
     onCodingResult(null as unknown as CodingResult);
     setErrorMsg('');
+    setLegacyRunBlocked(false);
   };
 
   return (
     <div>
+      {/* Legacy banner */}
+      <div className="mb-3 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-start gap-2">
+        <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+          <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span>
+          <strong>旧版快照</strong>：本页仅供回看历史编码结果，已停止新的运行。
+          请使用侧边栏入口的"研究工作台"完成有证据溯源的编码分析（AI 建议 → 研究者决策 → 审计导出）。
+        </span>
+      </div>
+
       {/* Reference docs summary indicator */}
       {referenceDocs.filter((d) => d.summaryStatus === 'done').length > 0 && (
         <div className="mb-3 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700 flex items-center gap-2">
@@ -232,7 +110,7 @@ export const CodingModule: React.FC<CodingModuleProps> = ({
             hasApiKey={!!apiConfig.apikey}
             onGoSettings={onGoSettings}
             progress={progress}
-            errorMsg={errorMsg}
+            errorMsg={legacyRunBlocked ? '旧版编码流程已停用：请改用侧边栏的"研究工作台"完成有证据溯源的编码分析。' : errorMsg}
           />
         </>
       ) : (

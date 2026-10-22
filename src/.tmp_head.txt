@@ -1,0 +1,124 @@
+import React, { useState, useCallback } from 'react';
+import { TheoryParadigm, CodingResult, CodingDepth, ReferenceDoc, TerminologyConfig, ApiConfig } from '@/types';
+import { THEORY_CONFIGS } from '@/constants/theories';
+import { callAPI, extractText, chunkText, robustJSONParse, mergeCodingData } from '@/utils/api';
+import { TheorySelector } from './TheorySelector';
+import { InputPanel } from './InputPanel';
+import { ResultPanel } from './ResultPanel';
+
+interface CodingModuleProps {
+  selectedTheory: TheoryParadigm | null;
+  onSelectTheory: (t: TheoryParadigm) => void;
+  codingDepth: CodingDepth;
+  onDepthChange: (d: CodingDepth) => void;
+  domain: string;
+  onDomainChange: (v: string) => void;
+  codingResult: CodingResult | null;
+  onCodingResult: (r: CodingResult) => void;
+  referenceDocs: ReferenceDoc[];
+  terminology: TerminologyConfig;
+  apiConfig: ApiConfig;
+  memos: import('@/types').MemoItem[];
+  onAddMemo: (text: string, isAI?: boolean, theory?: TheoryParadigm) => void;
+  onGoSettings: () => void;
+}
+
+interface Progress {
+  current: number;
+  total: number;
+  msg: string;
+}
+
+function buildSystemPrompt(
+  theory: TheoryParadigm,
+  domain: string,
+  depth: CodingDepth,
+  referenceDocs: ReferenceDoc[],
+  terminology: TerminologyConfig
+): string {
+  const cfg = THEORY_CONFIGS[theory];
+  const isDeep = depth === 'deep';
+
+  // Reference library knowledge
+  const refSection = referenceDocs
+    .filter((d) => d.summaryStatus === 'done' && d.summary)
+    .map((d, i) => `【参考文献 ${i + 1}：${d.name}】\n${d.summary}`)
+    .join('\n\n');
+
+  // Terminology section
+  const termLines = terminology.terms
+    .map((t) => `  - 用"${t.specific}"替代"${t.general}"`)
+    .join('\n');
+  const termSection =
+    terminology.styleDescription || terminology.terms.length > 0
+      ? `\n【专业术语与语言规范】\n${terminology.styleDescription ? terminology.styleDescription + '\n' : ''}${termLines ? '术语替换规则：\n' + termLines : ''}`
+      : '';
+
+  const refNote = refSection
+    ? `\n【领域参考文献摘要（供学术规范参考）】\n${refSection}\n`
+    : '';
+
+  return `你是一位扎根理论研究专家，当前使用【${cfg.name}】进行编码分析。
+
+${cfg.promptGuidance}
+${domain ? `\n研究领域：${domain}` : ''}${termSection}${refNote}
+
+【编码层级对应】
+- 第一层：${cfg.codingLevels.level1}（最高抽象，统摄整体）
+- 第二层：${cfg.codingLevels.level2}（中间范畴，归纳属性）
+- 第三层：${cfg.codingLevels.level3}（贴近原文，具体可感）
+
+【极其重要的输出要求】
+1. 严格只输出合法的 JSON 格式，不要包含任何 Markdown 标记或代码块。
+2. 引语中如果有双引号必须用反斜杠转义 (\\"）。
+3. 禁止输出未转义换行符，全部替换为空格。
+4. JSON 结构：
+{
+  "selective_codes": [
+    {
+      "label": "${cfg.codingLevels.level1}名称",
+      "axial_codes": [
+        {
+          "label": "${cfg.codingLevels.level2}名称",
+          "open_codes": [
+            {
+              "label": "${cfg.codingLevels.level3}名称",
+              "quote": "原文典型引语20-50字"${isDeep ? ',\n              "note": "范畴说明1-2句"' : ''}
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "core_category": "核心范畴或核心变量的简要描述",
+  "memo_suggestions": ["理论备忘要点1", "理论备忘要点2"]
+}`;
+}
+
+export const CodingModule: React.FC<CodingModuleProps> = ({
+  selectedTheory,
+  onSelectTheory,
+  codingDepth,
+  onDepthChange,
+  domain,
+  onDomainChange,
+  codingResult,
+  onCodingResult,
+  referenceDocs,
+  terminology,
+  apiConfig,
+  memos,
+  onAddMemo,
+  onGoSettings,
+}) => {
+  const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleRun = useCallback(
+    async (_text: string) => {
+      setErrorMsg('旧版编码流程已停用：请改用侧边栏的"研究工作台"完成有证据溯源的编码分析。历史结果仅供回看。');
+    },
+    []
+  );
+
