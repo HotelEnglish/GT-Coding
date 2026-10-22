@@ -6,6 +6,7 @@ import {
   createProject,
   decideCodeAssignment,
   decideMemo,
+  exportProjectAudit,
   getAnalysisRun,
   getProjectOverview,
   listProjectDocuments,
@@ -22,6 +23,7 @@ router.post('/projects', createProject);
 router.post('/projects/:projectId/documents', createDocument);
 router.get('/projects/:projectId/documents', listProjectDocuments);
 router.get('/projects/:projectId/overview', getProjectOverview);
+router.get('/projects/:projectId/audit-export', exportProjectAudit);
 router.post('/projects/:projectId/analysis-runs', startAnalysisRunHandler);
 router.put('/projects/:projectId/saturation-assessment', putSaturationAssessment);
 router.get('/analysis-runs/:id', getAnalysisRun);

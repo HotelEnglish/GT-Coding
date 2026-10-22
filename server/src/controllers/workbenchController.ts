@@ -6,6 +6,7 @@ import {
   reconcileRun,
   AnalysisRunError,
 } from '../services/analysisRunService';
+import { buildAuditArchiveFile, AuditFormat } from '../services/auditExportService';
 
 function workspaceId(req: Request): string {
   if (!req.workspaceId) throw new Error('本地工作区标识缺失。');
@@ -323,6 +324,26 @@ export async function putSaturationAssessment(req: Request, res: Response) {
       update: { payload: payload as object },
     });
     return res.json({ success: true, data: assessment });
+  } catch (error) {
+    return respondError(res, error);
+  }
+}
+
+export async function exportProjectAudit(req: Request, res: Response) {
+  try {
+    const { projectId } = req.params;
+    const requested = typeof req.query.format === 'string' ? req.query.format : 'json';
+    if (!['json', 'csv'].includes(requested)) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: '导出格式仅支持 json 或 csv。' } });
+    }
+    const project = await requireProject(projectId, workspaceId(req));
+    if (!project) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: '未找到研究项目。' } });
+
+    const file = await buildAuditArchiveFile(project, requested as AuditFormat);
+    res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    console.log(`[audit-export] workspace=${workspaceId(req)} project=${projectId} format=${requested}`);
+    return res.status(200).type(file.contentType).send(file.body);
   } catch (error) {
     return respondError(res, error);
   }
