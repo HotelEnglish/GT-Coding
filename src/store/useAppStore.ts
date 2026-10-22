@@ -77,7 +77,11 @@ export function useAppStore() {
   const clearMemos = useCallback(() => setMemos([]), []);
 
   // ── NAVIGATION ───────────────────────────────
-  const [activeModule, setActiveModule] = useState<ActiveModule>('coding');
+  const [activeModule, setActiveModule] = useState<ActiveModule>(() => {
+    // First visit lands on the researcher workbench; the legacy coding
+    // snapshot module is no longer reachable from navigation.
+    return 'workbench';
+  });
 
   return {
     // API

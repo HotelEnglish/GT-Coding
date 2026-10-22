@@ -12,15 +12,6 @@ interface NavItem {
   adminOnly?: boolean;
 }
 
-const IconGrid = () => (
-  <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
-    <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
-    <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
-    <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
-    <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
-  </svg>
-);
-
 const IconBook = () => (
   <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
     <path d="M2 2.5A1.5 1.5 0 013.5 1H12v11H3.5A1.5 1.5 0 012 10.5V2.5z" stroke="currentColor" strokeWidth="1.3" />
@@ -73,7 +64,10 @@ const IconSearch = () => (
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'workbench', label: '研究工作台', icon: <IconSearch />, section: '核心工作流' },
-  { id: 'coding', label: '编码工作台（旧版快照）', icon: <IconGrid />, section: '核心工作流' },
+  // Hidden until the new workbench is confirmed stable; the legacy module
+  // code stays in the codebase and the app module can still be activated
+  // programmatically via localStorage-persisted state.
+  // { id: 'coding', label: '编码工作台（旧版快照）', icon: <IconGrid />, section: '核心工作流' },
   { id: 'library', label: '参考文献库', icon: <IconBook /> },
   { id: 'terminology', label: '专业术语设置', icon: <IconTag /> },
   { id: 'settings', label: 'API 配置', icon: <IconSettings /> },
