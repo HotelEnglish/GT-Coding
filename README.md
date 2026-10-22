@@ -293,6 +293,22 @@ npm run dev
 |------|------|------|
 | * | `/api/coding/*` | **410 Gone** — 旧版模拟编码接口已默认停用（`LEGACY_CODING_ENABLED=true` 可在本地临时启用）。请改用研究工作台 `/api/workbench/*` |
 
+### 研究工作台（可审计 MVP）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/workbench/projects` | 项目列表（`x-gt-workspace` 工作区隔离，默认 `local-default`） |
+| POST | `/api/workbench/projects` | 建研究项目（methodology=procedural） |
+| POST | `/api/workbench/projects/:id/documents` | 上传资料 → 生成不可变版本 + 确定性分块（SHA-256） |
+| GET | `/api/workbench/projects/:id/documents` | 资料与版本列表 |
+| GET | `/api/workbench/projects/:id/overview` | 编码建议/备忘录/饱和度自评聚合 |
+| POST | `/api/workbench/projects/:id/analysis-runs` | 发起分析运行；需 `Idempotency-Key`，同键幂等；202 queued + 进程内异步执行 |
+| GET | `/api/workbench/analysis-runs/:id` | 运行状态/进度/模型元数据（不含密钥） |
+| POST | `/api/workbench/code-assignments/:id/decisions` | 研究者决策 accept/edit/reject/defer；edit 永久保留 AI 原文 |
+| POST | `/api/workbench/memos` | 新建研究备忘录；AI 备忘转正走 decisions |
+| PUT | `/api/workbench/projects/:id/saturation-assessment` | 饱和度研究者自评存档（系统不计算百分比） |
+| GET | `/api/workbench/projects/:id/audit-export` | 审计档案导出（`?format=json\|csv`）；存在旧版结果时标注 `legacy: provenance incomplete` |
+
 ### 管理员
 
 | 方法 | 路径 | 说明 |
